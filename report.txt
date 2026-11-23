@@ -1,0 +1,37 @@
+LAST WEEK REPORT 2026-11-23 15:28 FotiKosta-pi
+Names: FOTIOS SAGRIS, KOSTA KARVELAS
+R1 flask 3.1.3 | paho-mqtt 2.2.0
+R2 GET /     -> 200
+R3 GET /nope -> 404
+R4 network address, before -> 000
+R5 network address, after  -> 200
+R6 5000/tcp                   ALLOW       Anywhere                  
+R6 5000/tcp (v6)              ALLOW       Anywhere (v6)             
+R7 /          is text/html; charset=utf-8
+R8 /api/light is application/json
+R5 network address, after  -> 200
+R6 5000/tcp                   ALLOW       Anywhere                  
+R6 5000/tcp (v6)              ALLOW       Anywhere (v6)             
+R7 /          is text/html; charset=utf-8
+R8 /api/light is application/json
+R9 {"pct":50.8,"station":"s01","status":"offline","updated":"16:01:56"}
+R9 {"pct":50.8,"station":"s01","status":"offline","updated":"16:01:56"}
+R10 node stopped: {"pct":50.8,"station":"s01","status":"offline","updated":"16:01:56"}
+R11 {"ok":true,"sp":30.0}
+R12 GET /api/setpoint -> 405
+Last Week check 2026-11-23 16:31:19 host FotiKosta-pi
+ 1 PASS  page answers on localhost                  200 text/html
+ 2 PASS  page answers on 192.168.0.156              200
+ 3 PASS  /api/light answers with JSON               200 application/json
+ 4 PASS  unknown path /nope is refused              404
+ 5 PASS  readings are live (two reads, 3 s apart)   50.2 -> 50.4  status online
+ 6 PASS  GET /api/setpoint is refused               405
+ 7 PASS  POST sp=30 reaches bench/s01/cmd           200 heard ['sp:30']
+ 8 PASS  reading follows the setpoint (50.4 -> 30)  within 3 points after 4 s
+RESULT 8/8  station s01  host FotiKosta-pi  2026-11-23 16:31
+W1 One Set press, hop by hop, from browser back to browser:
+Clicking Set sends an HTTP POST to setpoint, which flask publishes to MQTT for the node to apply and publish a new reading back to the broker. The Flask MQTT listener updates latest and the browsers get/api/light poll fetches and displays the updated value.
+W2 Why does the dict "latest" exist? One sentence:
+The latest dict stores the most recent telemtry snapshot in memory so HTPP get/api/light requests can respond immediatly without waiting on sensor hardware or MQTT traffic. It also shares state safely between the background MQTT client thread and Flask request handlers.
+W3 How old can the number on the page be, in seconds, and why:
+the number can be Tnode + Tpoll seconds old equal to one full node oublish period plus one full browser poll period. This worst-case delay happens if a reading is published right after a browser poll finishes, forcing it to wait a full publish cycle and a full poll cycle before appearing on screen.
